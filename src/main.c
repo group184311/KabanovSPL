@@ -24,26 +24,26 @@ int main(void)
 	buttons_init(); //Инициализируем кнопки 1-4
 	timer_init();   //Инициализируем таймер 3
 
-	uint32_t last_state = GPIOB->IDR & GPIO_IDR_IDR11;
+	uint32_t last_state = GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_11);
 
 	for(;;)
 	{
-		uint32_t curr_state = GPIOB->IDR & GPIO_IDR_IDR11; //cчитываем логическое состояние вывода 11
+		uint32_t curr_state = GPIO_ReadInputDataBit(GPIOB, GPIO_Pin_11); //cчитываем логическое состояние вывода 11
 		if (curr_state != last_state)  //если произошла смена state
 		{
-			TIM3->CR1 &= ~TIM_CR1_CEN; // Stop count
-			GPIOC->ODR |= GPIO_ODR_ODR13; //LED off
+			TIM_Cmd(TIM3, DISABLE);
+			GPIO_WriteBit(GPIOC, GPIO_Pin_13, Bit_SET); //LED off (setting 1 in BSRR)
 			if (curr_state)
 			{
 				a = UINT16_MAX;
 			}
 			else
 			{
-				if (TIM3->CNT >= IN_MS_TO_POPUGAIS(100)) { a = TIM3->CNT;}
+				if (TIM_GetCounter(TIM3) >= IN_MS_TO_POPUGAIS(100)) { a = TIM_GetCounter(TIM3);}
 			}
-			TIM3->CNT = 0;
-			TIM3->ARR = a;
-			TIM3->CR1 |= TIM_CR1_CEN;
+				TIM_SetCounter(TIM3, 0);
+				TIM_SetAutoreload(TIM3, a);
+				TIM_Cmd(TIM3, ENABLE);
 		}
 		last_state = curr_state;
 //		if ( GPIOA->IDR & GPIO_IDR_IDR6  ) {b=IN_MS_TO_POPUGAIS(2000);}
