@@ -46,19 +46,11 @@ int main(void)
 				TIM_Cmd(TIM3, ENABLE);
 		}
 		last_state = curr_state;
-//		if ( GPIOA->IDR & GPIO_IDR_IDR6  ) {b=IN_MS_TO_POPUGAIS(2000);}
-//		// если мы хотим, чтобы при отключении кнопки вновь b=500ms нужно сделать curr & last states этой кнопки
-//		if ( GPIOC->IDR & GPIO_IDR_IDR14 ) {b=IN_MS_TO_POPUGAIS(3500);}
-//		if ( GPIOA->IDR & GPIO_IDR_IDR5  ) {b=IN_MS_TO_POPUGAIS(5000);}
-//		if (~(GPIOA->IDR & GPIO_IDR_IDR6) & ~(GPIOC->IDR & GPIO_IDR_IDR14) & ~(GPIOA->IDR & GPIO_IDR_IDR5))
-//		{
-//			{b=IN_MS_TO_POPUGAIS(500);}
-//		}
-		if (GPIOA->IDR & GPIO_IDR_IDR6)
+		if (GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_6))
 			{b=IN_MS_TO_POPUGAIS(2000);}
-		else if (GPIOC->IDR & GPIO_IDR_IDR14)
+		else if (GPIO_ReadInputDataBit(GPIOC, GPIO_Pin_14))
 			{b=IN_MS_TO_POPUGAIS(3500);}
-		else if (GPIOA->IDR & GPIO_IDR_IDR5)
+		else if (GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_5))
 			{b=IN_MS_TO_POPUGAIS(5000);}
 		else
 			{b=IN_MS_TO_POPUGAIS(500);}
