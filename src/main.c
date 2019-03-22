@@ -3,7 +3,7 @@
   * @file    main.c
   * @author  Anton Kabanov
   * @version V1.0
-  * @date    07-December-2018
+  * @date    22-March-2019
   * @brief   Default main function.
   ******************************************************************************
 */
@@ -58,89 +58,84 @@ int main(void)
 }
 
 void TIM3_IRQHandler(void)
-//Функция обработчика прерывания от таймера 3
 {
-//  Если произошло прерывание по переполнению таймера
-//	Сбрасываем флаг переполнения
-	if (TIM3->SR & TIM_SR_UIF)
+	if (TIM_GetITStatus(TIM3, TIM_IT_Update))
 	{
-		TIM3->SR &= ~TIM_SR_UIF; // Clean UIF Flag
+		TIM_ClearFlag(TIM3, TIM_IT_Update);
 		// Считываем логическое состояние вывода светодиода и инвертируем состояние
-		if ( GPIOC->ODR & GPIO_ODR_ODR13 ) //Если диод НЕ горит (it's pushed up by def)
+		if ( GPIO_ReadInputDataBit(GPIOC, GPIO_Pin_13) ) //Если диод НЕ горит (it's pushed up by def)
 		{
-			GPIOC->BSRR = GPIO_BSRR_BR13;  //Reset13 сбрось и тем самым зажги (состояние b)
-			TIM3->ARR = b; //arr тут может меняться
+			GPIO_WriteBit(GPIOC, GPIO_Pin_13, Bit_RESET);  //Reset13 сбрось и тем самым зажги (состояние b)
+			TIM_SetAutoreload(TIM3, b); //arr тут может меняться
 		}
 		else
 		{
-			GPIOC->BSRR = GPIO_BSRR_BS13; //Set13 и выключи (состояние а)
-			TIM3->ARR = a;
+			GPIO_WriteBit(GPIOC, GPIO_Pin_13, Bit_SET); //Set13 и выключи (состояние а)
+			TIM_SetAutoreload(TIM3, a);
 		}
-	}
-	else
-//	Прерывание произошло от триггера
-	{
-		TIM3->SR &= ~TIM_SR_TIF; // Cleaning TIF Flag
-		TIM3->EGR |= TIM_EGR_UG; //Updating generation
-		GPIOC->ODR |=GPIO_ODR_ODR13; //гасим диод
-		TIM3->PSC = 36000 - 1;
-		TIM3->ARR = UINT16_MAX;
-		TIM3->CR1 |= TIM_CR1_CEN; // Start count
 	}
 }
 
 void led_init(void)
-// В этой процедуре инициализируем LED
 {
-//  Включаем тактирование порта C
-	RCC->APB2ENR |= RCC_APB2ENR_IOPCEN;
-//  сброс состояния порта С pin 13
-	GPIOC->CRH &= ~(GPIO_CRH_CNF13_1 | GPIO_CRH_CNF13_0 | GPIO_CRH_MODE13_1 | GPIO_CRH_MODE13_0);
-//  настраиваем LED как выход (push/pull out speed 2MHz) RM p.160
-	GPIOC->CRH |= GPIO_CRH_MODE13_1;
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC, ENABLE);
+	//  настраиваем LED как выход (push/pull out speed 2MHz) RM p.160
+	GPIO_InitTypeDef gpio_init;
+		gpio_init.GPIO_Pin = GPIO_Pin_13; // | GPIO_Pin_15; if needed
+		gpio_init.GPIO_Speed = GPIO_Speed_2MHz;
+		gpio_init.GPIO_Mode = GPIO_Mode_Out_PP;
+	GPIO_Init(GPIOC, &gpio_init);
 }
 
 void buttons_init(void)
-// В этой инициализируем кнопки 1-4
 {
-	// Включаем тактирование недостающих портов А и В (C уже включен)
-	RCC->APB2ENR |= RCC_APB2ENR_IOPAEN | RCC_APB2ENR_IOPBEN; //  | RCC_APB2ENR_IOPCEN;
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
 
-	// Сбрасываем все 4 кнопки в соответствии с вариантом 7
-	// сброс состояния порта  А pin 6 (кнопка 2) и
-	GPIOA->CRL &= ~(GPIO_CRL_CNF6_1 | GPIO_CRL_CNF6_0 | GPIO_CRL_MODE6_1 | GPIO_CRL_MODE6_0
-							  // pin 5 (кнопка 4)
-				  | GPIO_CRL_CNF5_1 | GPIO_CRL_CNF5_0 | GPIO_CRL_MODE5_1 | GPIO_CRL_MODE5_0);
-	// сброс состояния порта  B pin 11 (кнопка 1)
-	GPIOB->CRH &= ~(GPIO_CRH_CNF11_1 | GPIO_CRH_CNF11_0 | GPIO_CRH_MODE11_1 | GPIO_CRH_MODE11_0);
-	// сброс состояния порта  C pin 14 (кнопка 3)
-	GPIOC->CRH &= ~(GPIO_CRH_CNF14_1 | GPIO_CRH_CNF14_0 | GPIO_CRH_MODE14_1 | GPIO_CRH_MODE14_0);
+	GPIO_InitTypeDef gpio1_init;
+		gpio1_init.GPIO_Pin = GPIO_Pin_11;
+		gpio1_init.GPIO_Speed = GPIO_Speed_2MHz;
+		gpio1_init.GPIO_Mode = GPIO_Mode_IPU;
+	GPIO_Init(GPIOB, &gpio1_init);
 
-	// Настраиваем все 4 кнопки, как вход с подтяжкой к земле (pulled-down) RM p.160
-	GPIOA->CRL |= GPIO_CRL_CNF6_1 | GPIO_CRL_CNF5_1; //кнопки 2 и 4
-	GPIOA->ODR &= ~(GPIO_ODR_ODR6 | GPIO_ODR_ODR5); // хотя это и не обязательно, там и так нули
+	GPIO_InitTypeDef gpio2_init;
+		gpio2_init.GPIO_Pin = GPIO_Pin_6;
+		gpio2_init.GPIO_Speed = GPIO_Speed_2MHz;
+		gpio2_init.GPIO_Mode = GPIO_Mode_IPU;
+	GPIO_Init(GPIOA, &gpio2_init);
 
-	GPIOB->CRH |= GPIO_CRH_CNF11_1; //кнопка 1
-	GPIOB->ODR &= ~GPIO_ODR_ODR11;
+	GPIO_InitTypeDef gpio3_init;
+		gpio3_init.GPIO_Pin = GPIO_Pin_14;
+		gpio3_init.GPIO_Speed = GPIO_Speed_2MHz;
+		gpio3_init.GPIO_Mode = GPIO_Mode_IPU;
+	GPIO_Init(GPIOC, &gpio3_init);
 
-	GPIOC->CRH |= GPIO_CRH_CNF14_1; //кнопка 3
-	GPIOC->ODR &= ~GPIO_ODR_ODR14;
+	GPIO_InitTypeDef gpio4_init;
+		gpio4_init.GPIO_Pin = GPIO_Pin_5;
+		gpio4_init.GPIO_Speed = GPIO_Speed_2MHz;
+		gpio4_init.GPIO_Mode = GPIO_Mode_IPU;
+	GPIO_Init(GPIOA, &gpio4_init);
 }
 
 void timer_init(void)
-//инициализация таймера 3
 {
-//  Включаем тактирование
-	RCC->APB1ENR |= RCC_APB1ENR_TIM3EN;
-//  Разрешаем прерывания по переполнению таймера и по triggery
-//  DMA/Interrupt Enable Register
-	TIM3->DIER |= TIM_DIER_UIE; // Update  Interrupt Enable
-//	TIM3->DIER |= TIM_DIER_TIE; // Trigger Interrupt Enable
-//  Включение прерывания таймера
-	NVIC_EnableIRQ(TIM3_IRQn);
-//  Запускаем таймер 3 на тактовой частоте в 1 kHz
-	TIM3->PSC = 36000 - 1;
-//  Период - 1000 тактов => 1000/1000 = 1 Hz
-	TIM3->ARR = 1000 - 1;
-	TIM3->CR1 |= TIM_CR1_CEN; // Start count
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);
+
+	TIM_TimeBaseInitTypeDef tim;
+		tim.TIM_ClockDivision = TIM_CKD_DIV1;
+		tim.TIM_CounterMode = TIM_CounterMode_Up;
+		tim.TIM_Prescaler = 36000-1;
+		tim.TIM_Period = 1000-1;
+	TIM_TimeBaseInit(TIM3, &tim);
+
+	TIM_ITConfig(TIM3,TIM_IT_Update, ENABLE); // Update  Interrupt Enable DMA/Interrupt Enable Register
+
+	NVIC_InitTypeDef nvicInit;
+		nvicInit.NVIC_IRQChannel = TIM3_IRQn;
+		nvicInit.NVIC_IRQChannelCmd = ENABLE;
+		nvicInit.NVIC_IRQChannelPreemptionPriority = 0;
+		nvicInit.NVIC_IRQChannelSubPriority = 0;
+	NVIC_Init(&nvicInit);
+
+	TIM_Cmd(TIM3, ENABLE); // Start count
 }
