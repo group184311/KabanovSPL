@@ -1,0 +1,10 @@
+*.cproject
+*.cfg
+*.mxproject
+*.project
+*.xml
+*.ld
+Debug/
+StdPeriph_Driver/
+.settings/
+
