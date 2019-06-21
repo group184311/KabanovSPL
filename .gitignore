@@ -1,0 +1,14 @@
+*.cproject
+*.cfg
+*.mxproject
+*.project
+*.xml
+*.ld
+CMSIS/
+Debug/
+StdPeriph_Driver/
+HAL_Driver/
+.settings/
+
+
+
