@@ -216,16 +216,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef *huart)
 
 void HAL_MspInit(void)
 {
-	//Here will do low level processor specific inits.
-
-	//1. Set up the priority grouping of the arm processor
 	HAL_NVIC_SetPriorityGrouping(NVIC_PRIORITYGROUP_4);
-
-	//2. Enable the required system exceptions of the arm processor
-//	SCB->SHCSR |= 0x7 << 16; //usage fault, memory fault and bus fault system exceptions
-//	HAL_NVIC_SetPriority(MemoryManagement_IRQn,0,0);
-//	HAL_NVIC_SetPriority(BusFault_IRQn,0,0);
-//	HAL_NVIC_SetPriority(UsageFault_IRQn,0,0);
 }
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
@@ -235,48 +226,52 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 		HAL_UART_Receive_IT(&huart1, &rcvd_data1, 1);
 		uint8_t tmp1 = rcvd_data1;
 		HAL_NVIC_DisableIRQ(USART1_IRQn);
-		buff1[write1] = tmp1;
-		if ((write1-read1)<(buff_size-1))
-		{
-			if (write1 == buff_size-1)
+			buff1[write1] = tmp1;
+			if ((write1-read1)<(buff_size-1))
 			{
-				write1 = 0;
+				if (write1 == buff_size-1)
+				{
+					write1 = 0;
+				}
+				else
+				{
+					write1++;
+				}
 			}
-			else
-			{
-				write1 = write1+1;
-			}
-		}
-		else
-		{
-			Error_handler();
-		}
 		HAL_NVIC_EnableIRQ(USART1_IRQn);
-		HAL_UART_Transmit_IT(&huart2, &buff1[read1], 1);
+//		HAL_UART_Receive_IT(&huart1, &rcvd_data1, 1);
+//		if (write1 > read1)
+//		{
+			HAL_UART_Transmit_IT(&huart2, &buff1[read1], 1);
+
+//		}
+//		HAL_UART_Receive_IT(&huart1, &rcvd_data1, 1);
 	}
 	if(huart->Instance==USART2)
 	{
 		HAL_UART_Receive_IT(&huart2, &rcvd_data2, 1);
-		HAL_NVIC_DisableIRQ(USART2_IRQn);
 		uint8_t tmp2 = rcvd_data2;
-		buff2[write2] = tmp2;
-		if ((write2-read2)<(buff_size-1))
-		{
-			if (write2 == buff_size-1)
+		HAL_NVIC_DisableIRQ(USART2_IRQn);
+			buff2[write2] = tmp2;
+			if ((write2-read2)<(buff_size-1))
 			{
-				write2 = 0;
+				if (write2 == buff_size-1)
+				{
+					write2 = 0;
+				}
+				else
+				{
+					write2++;
+				}
 			}
-			else
-			{
-				write2 = write2+1;
-			}
-		}
-		else
-		{
-			Error_handler();
-		}
 		HAL_NVIC_EnableIRQ(USART2_IRQn);
-		HAL_UART_Transmit_IT(&huart1, &buff2[read2], 1);
+//		HAL_UART_Receive_IT(&huart2, &rcvd_data2, 1);
+//		if (write2 > read2)
+//		{
+			HAL_UART_Transmit_IT(&huart1, &buff2[read2], 1);
+
+//		}
+//		HAL_UART_Receive_IT(&huart2, &rcvd_data2, 1);
 	}
 }
 
@@ -284,7 +279,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
 	if(huart->Instance==USART1)
 	{
-		HAL_NVIC_DisableIRQ(USART1_IRQn);
+//		HAL_NVIC_DisableIRQ(USART1_IRQn);
 		if ((write1-read1)<(buff_size-1))
 		{
 			if (read1 == buff_size-1)
@@ -293,20 +288,20 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 			}
 			else
 			{
-				read1 = read1+1;
+				read1++;
 			}
 		}
-		else
-		{
-			Error_handler();
-		}
-		HAL_NVIC_EnableIRQ(USART1_IRQn);
+//		HAL_NVIC_EnableIRQ(USART1_IRQn);
 //		HAL_UART_Receive_IT(&huart1, &rcvd_data1, 1);
-//		HAL_UART_Transmit_IT(&huart2, &buff1[read1], 1);
+//		if (write1 > read1)
+//				{
+//					HAL_UART_Transmit_IT(&huart2, &buff1[read1], 1);
+//				}
+
 	}
 	if(huart->Instance==USART2)
 	{
-		HAL_NVIC_DisableIRQ(USART2_IRQn);
+//		HAL_NVIC_DisableIRQ(USART2_IRQn);
 		if ((write2-read2)<(buff_size-1))
 		{
 			if (read2 == buff_size-1)
@@ -315,16 +310,15 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 			}
 			else
 			{
-				read2 = read2+1;
+				read2++;
 			}
 		}
-		else
-		{
-			Error_handler();
-		}
-		HAL_NVIC_EnableIRQ(USART2_IRQn);
+//		HAL_NVIC_EnableIRQ(USART2_IRQn);
 //		HAL_UART_Receive_IT(&huart2, &rcvd_data2, 1);
-//		HAL_UART_Transmit_IT(&huart2, &buff1[read1], 1);
+//		if (write2 > read2)
+//				{
+//					HAL_UART_Transmit_IT(&huart1, &buff2[read2], 1);
+//				}
 	}
 }
 
